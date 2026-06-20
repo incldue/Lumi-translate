@@ -1,0 +1,50 @@
+{
+  "name": "lumi-translate",
+  "version": "1.0.0",
+  "description": "A modern desktop translator with glass UI and fast global shortcuts.",
+  "main": "src/main.js",
+  "author": "Lumi Translate",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder --win portable",
+    "portable": "powershell -ExecutionPolicy Bypass -File scripts/make-portable.ps1",
+    "release:zip": "powershell -ExecutionPolicy Bypass -File scripts/make-portable.ps1 -Zip"
+  },
+  "dependencies": {
+    "electron-store": "^8.2.0"
+  },
+  "devDependencies": {
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8",
+    "resedit": "^1.7.2"
+  },
+  "build": {
+    "appId": "com.lumi.translate",
+    "productName": "Lumi Translate",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "portable": {
+      "artifactName": "LumiTranslate.exe"
+    }
+  }
+}
