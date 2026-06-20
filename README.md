@@ -1,6 +1,3 @@
-<div align="center">
-
-
 # Lumi Translate
 
 一款轻量、快速、玻璃拟态风格的 Windows 桌面翻译应用。
