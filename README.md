@@ -2,7 +2,7 @@
 
 一款轻量、快速、玻璃拟态风格的 Windows 桌面翻译应用。
 
-![Electron](https://img.shields.io/badge/Electron-33-47848F?logo=electron&logoColor=white)![Windows](https://img.shields.io/badge/Windows-x64-0078D4?logo=windows&logoColor=white) ![License](https://img.shields.io/badge/License-MIT-green.svg)![Release](https://img.shields.io/badge/Release-v2.0.0-blue.svg) 
+![Electron](https://img.shields.io/badge/Electron-33-47848F?logo=electron&logoColor=white) ![Windows](https://img.shields.io/badge/Windows-x64-0078D4?logo=windows&logoColor=white) ![License](https://img.shields.io/badge/License-MIT-green.svg) ![Release](https://img.shields.io/badge/Release-v2.0.0-blue.svg) 
 
 ## ✨ 简介
 
