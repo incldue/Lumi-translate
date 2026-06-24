@@ -17,6 +17,14 @@
   ['id', '印尼语']
 ];
 
+const DEFAULT_SHORTCUTS = Object.freeze({
+  toggleWindow: 'CommandOrControl+Alt+T',
+  translateClipboard: 'CommandOrControl+Alt+C',
+  toggleDetail: 'CommandOrControl+Shift+D',
+  captureScreen: 'CommandOrControl+Alt+S',
+  realtimeScreen: 'CommandOrControl+Alt+Shift+R'
+});
+
 const $ = (id) => document.getElementById(id);
 
 let config = null;
@@ -25,6 +33,7 @@ let detailMode = true;
 let debounceTimer = null;
 let historyTimer = null;
 let requestSerial = 0;
+let screenRealtimeActive = false;
 const translationCache = new Map();
 const dictionaryCache = new Map();
 
@@ -46,8 +55,16 @@ const el = {
   toggleShortcut: $('toggleShortcut'),
   clipboardShortcut: $('clipboardShortcut'),
   detailShortcut: $('detailShortcut'),
+  captureShortcut: $('captureShortcut'),
+  realtimeShortcut: $('realtimeShortcut'),
   customApiUrl: $('customApiUrl'),
-  timeoutMs: $('timeoutMs')
+  timeoutMs: $('timeoutMs'),
+  screenIntervalMs: $('screenIntervalMs'),
+  screenVideoMode: $('screenVideoMode'),
+  screenOcrScale: $('screenOcrScale'),
+  screenStableTicks: $('screenStableTicks'),
+  screenCaptureBtn: $('screenCaptureBtn'),
+  screenRealtimeBtn: $('screenRealtimeBtn')
 };
 
 function fillLanguages() {
@@ -69,6 +86,7 @@ async function boot() {
   bindEvents();
   updateDetailMode();
   applyOpacity();
+  applyScreenState(await window.lumi.getScreenState());
   el.input.focus();
 }
 
@@ -76,15 +94,22 @@ function hydrateConfig() {
   config.translation ||= {};
   config.appearance ||= {};
   config.shortcuts ||= {};
+  config.screen ||= {};
   el.source.value = config.translation.source || 'auto';
   el.target.value = config.translation.target || 'zh-CN';
   el.alwaysOnTop.checked = !!config.appearance.alwaysOnTop;
   el.opacity.value = config.appearance.opacity || 0.96;
-  el.toggleShortcut.value = config.shortcuts.toggleWindow || 'CommandOrControl+Alt+T';
-  el.clipboardShortcut.value = config.shortcuts.translateClipboard || 'CommandOrControl+Alt+C';
-  el.detailShortcut.value = config.shortcuts.toggleDetail || 'CommandOrControl+Shift+D';
+  el.toggleShortcut.value = config.shortcuts.toggleWindow || DEFAULT_SHORTCUTS.toggleWindow;
+  el.clipboardShortcut.value = config.shortcuts.translateClipboard || DEFAULT_SHORTCUTS.translateClipboard;
+  el.detailShortcut.value = config.shortcuts.toggleDetail || DEFAULT_SHORTCUTS.toggleDetail;
+  el.captureShortcut.value = config.shortcuts.captureScreen || DEFAULT_SHORTCUTS.captureScreen;
+  el.realtimeShortcut.value = config.shortcuts.realtimeScreen || DEFAULT_SHORTCUTS.realtimeScreen;
   el.customApiUrl.value = config.translation.customApiUrl || '';
   el.timeoutMs.value = config.translation.timeoutMs || 9000;
+  el.screenIntervalMs.value = config.screen.intervalMs || 1600;
+  el.screenVideoMode.checked = config.screen.videoMode !== false;
+  el.screenOcrScale.value = config.screen.ocrScale || 1.25;
+  el.screenStableTicks.value = config.screen.stableTicks || 2;
 }
 
 function bindEvents() {
@@ -101,6 +126,8 @@ function bindEvents() {
   $('swapBtn').addEventListener('click', swapLanguages);
   $('clipboardBtn').addEventListener('click', translateClipboardFromRenderer);
   $('detailBtn').addEventListener('click', toggleDetail);
+  $('screenCaptureBtn').addEventListener('click', startScreenCaptureTranslate);
+  $('screenRealtimeBtn').addEventListener('click', toggleScreenRealtime);
   $('clearHistoryBtn').addEventListener('click', clearHistory);
   $('saveSettingsBtn').addEventListener('click', saveSettings);
 
@@ -132,6 +159,11 @@ function bindEvents() {
     translateNow(true);
   });
   window.lumi.onToggleDetail(() => toggleDetail());
+  window.lumi.onScreenStatus(handleScreenStatus);
+  window.lumi.onScreenTranslation(handleScreenTranslation);
+  window.lumi.onScreenState(applyScreenState);
+  window.lumi.onCaptureCompact(applyCaptureCompact);
+  window.lumi.onDictionaryUpdate(handleDictionaryUpdate);
 }
 
 function switchPage(page) {
@@ -148,6 +180,10 @@ function switchPage(page) {
 
 function applyOpacity() {
   document.querySelector('.workspace').style.opacity = el.opacity.value || 0.96;
+}
+
+function applyCaptureCompact(compact) {
+  document.body.classList.toggle('capture-compact', !!compact);
 }
 
 async function saveTranslationConfig() {
@@ -236,13 +272,46 @@ async function lookupDictionary(text) {
   }
 }
 
+function handleDictionaryUpdate(payload = {}) {
+  const current = el.input.value.trim().toLowerCase();
+  const word = String(payload.word || '').toLowerCase();
+  if (!payload.entry || current !== word) return;
+  dictionaryCache.set(word, payload.entry);
+  el.wordTitle.textContent = payload.entry.word || payload.word || el.input.value.trim();
+  const phonetic = payload.entry.phonetic || payload.entry.sources?.find(x => x.phonetic)?.phonetic || '';
+  if (phonetic) el.phonetic.textContent = phonetic;
+  el.dictionary.className = 'dictionary-content';
+  el.dictionary.innerHTML = formatDictionary(payload.entry);
+}
+
 function formatDictionary(entry) {
+  if (Array.isArray(entry.sources)) return formatDictionarySources(entry);
+
   const lines = [];
   for (const meaning of entry.meanings || []) {
     lines.push(`<div><b>${escapeHtml(meaning.partOfSpeech || '')}</b></div>`);
     for (const def of (meaning.definitions || []).slice(0, 3)) {
       lines.push(`<div>• ${escapeHtml(def.definition || '')}</div>`);
       if (def.example) lines.push(`<div style="color:#94a3c7;margin-left:14px">e.g. ${escapeHtml(def.example)}</div>`);
+    }
+  }
+  return lines.join('') || '<div class="dictionary-empty">没有可显示的释义。</div>';
+}
+
+function formatDictionarySources(entry) {
+  const lines = [];
+  for (const source of entry.sources || []) {
+    const sourceLines = [];
+    for (const meaning of source.meanings || []) {
+      if (meaning.partOfSpeech) sourceLines.push(`<div><b>${escapeHtml(meaning.partOfSpeech)}</b></div>`);
+      for (const def of (meaning.definitions || []).slice(0, 4)) {
+        if (def.definition) sourceLines.push(`<div>• ${escapeHtml(def.definition)}</div>`);
+        if (def.example) sourceLines.push(`<div style="color:#94a3c7;margin-left:14px">e.g. ${escapeHtml(def.example)}</div>`);
+      }
+    }
+    if (sourceLines.length) {
+      lines.push(`<div class="dict-source"><b>${escapeHtml(source.source || '词典')}</b></div>`);
+      lines.push(...sourceLines);
     }
   }
   return lines.join('') || '<div class="dictionary-empty">没有可显示的释义。</div>';
@@ -274,9 +343,17 @@ async function saveSettings() {
       customApiUrl: el.customApiUrl.value.trim()
     },
     shortcuts: {
-      toggleWindow: el.toggleShortcut.value.trim() || 'CommandOrControl+Alt+T',
-      translateClipboard: el.clipboardShortcut.value.trim() || 'CommandOrControl+Alt+C',
-      toggleDetail: el.detailShortcut.value.trim() || 'CommandOrControl+Shift+D'
+      toggleWindow: el.toggleShortcut.value.trim() || DEFAULT_SHORTCUTS.toggleWindow,
+      translateClipboard: el.clipboardShortcut.value.trim() || DEFAULT_SHORTCUTS.translateClipboard,
+      toggleDetail: el.detailShortcut.value.trim() || DEFAULT_SHORTCUTS.toggleDetail,
+      captureScreen: el.captureShortcut.value.trim() || DEFAULT_SHORTCUTS.captureScreen,
+      realtimeScreen: el.realtimeShortcut.value.trim() || DEFAULT_SHORTCUTS.realtimeScreen
+    },
+    screen: {
+      intervalMs: Number(el.screenIntervalMs.value) || 1600,
+      videoMode: el.screenVideoMode.checked,
+      ocrScale: Math.min(3, Math.max(1, Number(el.screenOcrScale.value) || 1.25)),
+      stableTicks: Math.min(4, Math.max(1, Number(el.screenStableTicks.value) || 2))
     }
   });
   setStatus('Settings saved');
@@ -302,6 +379,63 @@ async function translateClipboardFromRenderer() {
   el.inputCount.textContent = `${text.length} chars`;
   switchPage('translate');
   translateNow(true);
+}
+
+async function startScreenCaptureTranslate() {
+  setStatus('拖拽选择截图 OCR 翻译区域…');
+  try {
+    await window.lumi.captureTranslate();
+  } catch (err) {
+    setStatus(`截图 OCR 翻译失败: ${friendly(err)}`, true);
+  }
+}
+
+async function toggleScreenRealtime() {
+  setStatus(screenRealtimeActive ? '正在停止屏幕实时翻译…' : '拖拽选择屏幕实时翻译区域…');
+  try {
+    if (screenRealtimeActive) {
+      await window.lumi.stopScreenRealtime();
+    } else {
+      await window.lumi.startScreenRealtime();
+    }
+  } catch (err) {
+    setStatus(`屏幕实时翻译失败: ${friendly(err)}`, true);
+  }
+}
+
+function applyScreenState(state = {}) {
+  if (Object.prototype.hasOwnProperty.call(state, 'realtimeActive')) {
+    screenRealtimeActive = !!state.realtimeActive;
+  } else if (state.realtime === true) {
+    screenRealtimeActive = true;
+  }
+  if (!el.screenRealtimeBtn) return;
+  el.screenRealtimeBtn.textContent = screenRealtimeActive ? '停止实时' : '屏幕实时';
+  el.screenRealtimeBtn.classList.toggle('active', screenRealtimeActive);
+}
+
+function handleScreenStatus(payload = {}) {
+  applyScreenState(payload);
+  if (payload.text) setStatus(payload.text, !!payload.error);
+}
+
+function handleScreenTranslation(payload = {}) {
+  applyScreenState(payload);
+  if (!payload.realtime) switchPage('translate');
+
+  if (payload.sourceText && !payload.tentative) {
+    el.input.value = payload.sourceText;
+    el.inputCount.textContent = `${payload.sourceText.length} chars`;
+  }
+  if (typeof payload.translatedText === 'string') {
+    el.result.value = payload.translatedText;
+  }
+  if (payload.status) setStatus(payload.status, !!payload.error);
+
+  if (payload.sourceText && payload.translatedText) {
+    queueHistory(payload.sourceText, payload.translatedText, !payload.realtime);
+    if (!payload.realtime && detailMode) lookupDictionary(payload.sourceText);
+  }
 }
 
 async function copyResult() {

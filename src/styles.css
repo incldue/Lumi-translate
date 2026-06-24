@@ -80,6 +80,40 @@ textarea {
   -webkit-backdrop-filter: blur(20px) saturate(128%);
 }
 
+body.capture-compact .app-shell {
+  grid-template-columns: 1fr;
+  border-radius: 28px;
+  clip-path: inset(0 round 28px);
+}
+
+body.capture-compact .sidebar,
+body.capture-compact .page,
+body.capture-compact .topbar p,
+body.capture-compact .window-actions {
+  display: none !important;
+}
+
+body.capture-compact .workspace {
+  padding: 16px 18px;
+  justify-content: center;
+}
+
+body.capture-compact .topbar {
+  height: auto;
+  align-items: center;
+}
+
+body.capture-compact .topbar h1 {
+  font-size: 20px;
+  letter-spacing: -0.035em;
+}
+
+body.capture-compact .topbar::after {
+  content: "截图 / 实时翻译选区中…";
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .sidebar {
   min-width: 0;
   padding: 22px 16px;
@@ -241,7 +275,7 @@ kbd {
   border-radius: 24px;
   padding: 12px;
   display: grid;
-  grid-template-columns: 1fr 46px 1fr auto auto;
+  grid-template-columns: minmax(96px, 1fr) 42px minmax(96px, 1fr) repeat(4, minmax(72px, auto));
   gap: 10px;
   align-items: end;
 }
@@ -253,6 +287,18 @@ kbd {
   gap: 7px;
   color: var(--muted);
   font-size: 12px;
+}
+
+@media (max-width: 900px) {
+  .toolbar {
+    grid-template-columns: minmax(92px, 1fr) 42px minmax(92px, 1fr) repeat(2, minmax(70px, 1fr));
+    min-height: 116px;
+    align-items: stretch;
+  }
+
+  .toolbar .pill {
+    width: 100%;
+  }
 }
 
 select,
@@ -281,7 +327,17 @@ textarea:focus {
   background: rgba(255, 255, 255, 0.075);
   padding: 0 16px;
   cursor: pointer;
+  min-width: 0;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   transition: transform .14s ease, background .14s ease, border .14s ease;
+}
+
+.toolbar .pill {
+  padding-inline: clamp(9px, 1.4vw, 16px);
+  font-size: clamp(12px, 1.15vw, 14px);
 }
 
 .swap:hover,
@@ -299,6 +355,11 @@ textarea:focus {
 .pill.ghost {
   color: #d7dce7;
   background: rgba(255, 255, 255, 0.045);
+}
+
+.pill.active {
+  border-color: rgba(148, 163, 184, 0.55);
+  background: rgba(148, 163, 184, 0.18);
 }
 
 .translate-grid {
@@ -391,6 +452,15 @@ textarea::placeholder {
   font-size: 13px;
 }
 
+.dict-source {
+  margin: 8px 0 3px;
+  color: #dbe5f5;
+}
+
+.dict-source:first-child {
+  margin-top: 0;
+}
+
 .history-list {
   display: grid;
   gap: 10px;
@@ -425,15 +495,26 @@ textarea::placeholder {
 }
 
 .settings-grid {
+  flex: 1;
+  min-height: 0;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
+  align-content: start;
+  grid-auto-rows: max-content;
   overflow: auto;
   padding-right: 4px;
+  padding-bottom: 4px;
 }
 
 .settings-grid .wide {
   grid-column: 1 / -1;
+}
+
+.settings-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0 14px;
 }
 
 .setting-row {

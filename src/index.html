@@ -66,6 +66,8 @@
           </label>
           <button class="pill" id="clipboardBtn">剪贴板翻译</button>
           <button class="pill ghost" id="detailBtn">单词详解</button>
+          <button class="pill ghost" id="screenCaptureBtn">截图翻译</button>
+          <button class="pill ghost" id="screenRealtimeBtn">屏幕实时</button>
         </div>
 
         <div class="translate-grid">
@@ -115,7 +117,7 @@
 
       <section class="page" id="pageSettings">
         <div class="settings-grid">
-          <section class="panel">
+          <section class="panel wide">
             <div class="panel-head"><span>外观</span></div>
             <label class="setting-row">
               <span>窗口置顶</span>
@@ -127,20 +129,30 @@
             </label>
           </section>
 
-          <section class="panel">
+          <section class="panel wide shortcuts-panel">
             <div class="panel-head"><span>快捷键</span></div>
-            <label class="setting-row column">
-              <span>显示 / 隐藏</span>
-              <input id="toggleShortcut" class="input-line shortcut-input" placeholder="Ctrl+Alt+T" />
-            </label>
-            <label class="setting-row column">
-              <span>翻译剪贴板</span>
-              <input id="clipboardShortcut" class="input-line shortcut-input" placeholder="Ctrl+Alt+C" />
-            </label>
-            <label class="setting-row column">
-              <span>切换详解</span>
-              <input id="detailShortcut" class="input-line shortcut-input" placeholder="Ctrl+Shift+D" />
-            </label>
+            <div class="settings-fields shortcut-fields">
+              <label class="setting-row column">
+                <span>显示 / 隐藏</span>
+                <input id="toggleShortcut" class="input-line shortcut-input" placeholder="Ctrl+Alt+T" />
+              </label>
+              <label class="setting-row column">
+                <span>翻译剪贴板</span>
+                <input id="clipboardShortcut" class="input-line shortcut-input" placeholder="Ctrl+Alt+C" />
+              </label>
+              <label class="setting-row column">
+                <span>切换详解</span>
+                <input id="detailShortcut" class="input-line shortcut-input" placeholder="Ctrl+Shift+D" />
+              </label>
+              <label class="setting-row column">
+                <span>截图 OCR 翻译</span>
+                <input id="captureShortcut" class="input-line shortcut-input" placeholder="Ctrl+Alt+S" />
+              </label>
+              <label class="setting-row column">
+                <span>屏幕实时翻译</span>
+                <input id="realtimeShortcut" class="input-line shortcut-input" placeholder="Ctrl+Alt+Shift+R" />
+              </label>
+            </div>
           </section>
 
           <section class="panel wide">
@@ -152,6 +164,22 @@
             <label class="setting-row column">
               <span>请求超时 ms</span>
               <input id="timeoutMs" class="input-line" type="number" min="1000" max="60000" />
+            </label>
+            <label class="setting-row column">
+              <span>屏幕实时刷新间隔 ms</span>
+              <input id="screenIntervalMs" class="input-line" type="number" min="350" max="10000" />
+            </label>
+            <label class="setting-row">
+              <span>视频字幕增强模式</span>
+              <input type="checkbox" id="screenVideoMode" />
+            </label>
+            <label class="setting-row column">
+              <span>视频 OCR 放大倍数（建议 1-1.5，卡顿时调低）</span>
+              <input id="screenOcrScale" class="input-line" type="number" min="1" max="3" step="0.25" />
+            </label>
+            <label class="setting-row column">
+              <span>字幕稳定帧数（1-4）</span>
+              <input id="screenStableTicks" class="input-line" type="number" min="1" max="4" />
             </label>
             <button class="pill primary" id="saveSettingsBtn">保存设置</button>
           </section>

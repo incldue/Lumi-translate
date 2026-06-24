@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self';" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lumi Screen Result</title>
+  <link rel="stylesheet" href="./screen-overlays.css" />
+</head>
+<body class="result-body">
+  <main class="screen-card">
+    <div class="screen-card-head">
+      <strong><i id="phaseDot" class="phase-dot watching"></i>屏幕实时翻译</strong>
+      <span id="statusText">准备中…</span>
+    </div>
+    <div class="screen-original" id="sourceText"></div>
+    <div class="screen-translated" id="translatedText">选择区域后会在这里显示翻译结果</div>
+  </main>
+  <script src="./screen-result.js"></script>
+</body>
+</html>

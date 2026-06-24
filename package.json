@@ -14,7 +14,9 @@
     "release:zip": "powershell -ExecutionPolicy Bypass -File scripts/make-portable.ps1 -Zip"
   },
   "dependencies": {
-    "electron-store": "^8.2.0"
+    "@gutenye/ocr-node": "^1.4.8",
+    "electron-store": "^8.2.0",
+    "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
     "electron": "^33.4.11",
